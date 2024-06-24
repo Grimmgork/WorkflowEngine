@@ -57,7 +57,7 @@ namespace Workflows
 
         public static WorkflowValue OutputNode(int value)
         {
-            return new WorkflowValue(WorkflowDataType.OutputNode, value);
+            return new WorkflowValue(WorkflowDataType.OutputRef, value);
         }
 
         public static WorkflowValue Function(int value)
@@ -121,6 +121,11 @@ namespace Workflows
         public bool AsBool()
         {
             return As<bool>();
+        }
+
+        public int AsOutputRef()
+        {
+            return As<int>();
         }
 
         private T As<T>()

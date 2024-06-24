@@ -16,7 +16,7 @@ namespace Workflows
         String,
         Array,
         Object,
-        OutputNode,
+        OutputRef,
         FunctionRef,
         EventRef
     }

@@ -66,6 +66,11 @@ namespace Workflows
             return inputNodes.First(node => node.Id == id);
         }
 
+        public WorkflowInputNode? GetInputNodeForFunction(int functionId, string name)
+        {
+            return inputNodes.FirstOrDefault(node => node.FunctionId == functionId && node.Name == name);
+        }
+
         public WorkflowOutputNode GetOutputNode(int id)
         {
             return outputNodes.First(node => node.Id == id);
@@ -74,6 +79,11 @@ namespace Workflows
         public WorkflowFunctionNode GetFunctionNode(int id)
         {
             return functionNodes.First(node => node.Id == id);
+        }
+
+        public IEnumerable<WorkflowFunctionNode> GetFunctionNodes()
+        {
+            return functionNodes;
         }
     }
 }

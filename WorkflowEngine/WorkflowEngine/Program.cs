@@ -6,8 +6,8 @@ WorkflowDefinition workflow = new WorkflowDefinition("add_numbers");
 workflow.CreateFunctionNode(1, "print", WorkflowValue.OutputNode(3), true);
 workflow.CreateInputNode(2, 1, "value", WorkflowValue.String("Hello world!"));
 
-workflow.CreateFunctionNode(3, "print");
-workflow.CreateInputNode(6, 3, "value", WorkflowValue.String("lel"));
+workflow.CreateFunctionNode(3, "wait_for_confirmation");
+// workflow.CreateInputNode(6, 3, "value", WorkflowValue.String("lel"));
 
 workflow.CreateFunctionNode(4, "print");
 workflow.CreateInputNode(7, 4, "value", WorkflowValue.String("kek"));

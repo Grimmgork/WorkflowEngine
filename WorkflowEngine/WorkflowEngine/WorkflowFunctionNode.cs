@@ -11,6 +11,8 @@ namespace Workflows
         public int Id;
         public string FunctionName;
         public WorkflowValue Next;
+        public int XPos;
+        public int YPos;
         
         public WorkflowFunctionNode(int id, string name, WorkflowValue next)
         {

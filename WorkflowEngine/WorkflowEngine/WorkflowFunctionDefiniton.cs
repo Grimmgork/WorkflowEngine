@@ -9,7 +9,7 @@ namespace Workflows
 
     public interface IWorkflowFunctionInstance
     {
-        public int Id { get; set; }
+        public int Id { get; set; } // TODO 
         public Task<WorkflowFunctionResult> Run();
 
         public void SetInput(string name, WorkflowValue value);
@@ -90,6 +90,12 @@ namespace Workflows
     {
         public string Name;
         public WorkflowValueObject Data;
+
+        public WorkflowEventArgs(string name, WorkflowValueObject? data = null)
+        {
+            this.Name = name;
+            this.Data = data ?? new WorkflowValueObject();
+        }
     }
 
     public abstract class WorkflowFunctionInstanceBase : IWorkflowFunctionInstance
@@ -148,6 +154,36 @@ namespace Workflows
         {
             Console.WriteLine(inputs["value"]);
             return Task.FromResult(WorkflowFunctionResult.Done());
+        }
+    }
+
+    [WorkflowFunctionName("wait_for_confirmation")]
+    [WorkflowFunctionIsStateful]
+    public class WorkflowFunctionInstanceWaitForConfirmation : WorkflowFunctionInstanceBase
+    {
+        private bool confirmed;
+        private bool firstTime = true;
+
+        public override Task<WorkflowFunctionResult> Run()
+        {
+            if (firstTime)
+            {
+                firstTime = false;
+                return Task.FromResult(WorkflowFunctionResult.Again(new WorkflowEventArgs("NeedConfirmation")));
+            }
+
+            if (!confirmed)
+                return Task.FromResult(WorkflowFunctionResult.Again());
+
+            return Task.FromResult(WorkflowFunctionResult.Done());
+        }
+
+        public override void HandleEvent(WorkflowEventArgs args)
+        {
+            if (args.Name == "Confirm")
+            {
+                confirmed = true;
+            }
         }
     }
 

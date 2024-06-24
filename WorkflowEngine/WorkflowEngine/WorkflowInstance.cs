@@ -60,7 +60,7 @@ namespace Workflows
 
             if (result.IsError)
             {
-                events.Enqueue(new WorkflowEventArgs() { Name = "ErrorOccured" });
+                events.Enqueue(new WorkflowEventArgs("ErrorOccured"));
                 State = WorkflowInstanceState.Error;
                 return true;
             }

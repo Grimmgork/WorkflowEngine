@@ -8,8 +8,8 @@ namespace Workflows
 {
     public enum WorkflowDataType
     {
-        Error,
         Undef,
+        Error,
         Null,
         Int,
         Bool,

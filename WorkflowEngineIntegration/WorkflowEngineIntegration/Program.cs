@@ -1,4 +1,5 @@
 using WorkflowEngineIntegration;
+using Workflows;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,11 +9,14 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHostedService<WorkflowEngineService>();
+builder.Services.AddSingleton<IWorkflowFunctionInstanceFactory, WorkflowFunctionInstanceFactory>();
+builder.Services.AddSingleton<IWorkflowEngineService, WorkflowEngineService>();
 ModuleActivator activator = new ModuleActivator();
-activator.Activate(builder.Services);
-
+activator.RegisterServices(builder.Services);
 var app = builder.Build();
+activator.RegisterWorkflowFunctions(
+    app.Services.GetRequiredService<IWorkflowFunctionInstanceFactory>(), 
+    app.Services.GetRequiredService<IServiceScopeFactory>());
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -5,7 +5,20 @@ namespace WorkflowEngineIntegration
 {
     public interface IWorkflowEngineService
     {
+        void StartWorkflow(string name);
 
+        void StopWorkflow(int instanceId);
+
+        WorkflowInstanceState GetInstance(int instanceId);
+
+        IEnumerable<WorkflowInstanceState> GetInstances();
+    }
+
+    public class WorkflowInstanceState
+    {
+        public readonly string Name;
+
+        public readonly int InstanceId;
     }
 
     public class WorkflowEngineService : IWorkflowEngineService, IAsyncDisposable
@@ -22,9 +35,9 @@ namespace WorkflowEngineIntegration
         public void StartWorkflow(string name)
         {
             // deserialze WorkflowDefiniton from database
-            IServiceScope scope = scopeFactory.CreateScope();
             WorkflowDefinition definition = new WorkflowDefinition();
-            WorkflowInstance instance = new WorkflowInstance(definition, new WorkflowFunctionInstanceFactory(scope.ServiceProvider));
+            WorkflowFunctionInstanceFactory functionFactory = new WorkflowFunctionInstanceFactory();
+            WorkflowInstance instance = new WorkflowInstance(definition, functionFactory);
 
             // while(!instance.CanStep)
             //    while (HasEvent)

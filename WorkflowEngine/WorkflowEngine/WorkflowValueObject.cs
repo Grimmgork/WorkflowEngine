@@ -33,5 +33,7 @@ namespace Workflows
         {
             values.Remove(name);
         }
+
+        public static WorkflowValueObject Empty => new WorkflowValueObject();
     }
 }

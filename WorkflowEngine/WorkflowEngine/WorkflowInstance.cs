@@ -9,29 +9,32 @@ namespace Workflows
 {
     public enum WorkflowInstanceState
     {
+        Initial,
         Running,
-        Error,
-        Paused,
-        Aborted,
+        Waiting,
         Done
     }
 
     public class WorkflowInstance
     {
+        public WorkflowInstanceState State { get; private set; }
+
         private WorkflowDefinition definition;
-        private Queue<WorkflowEventArgs> events = new Queue<WorkflowEventArgs>();
+
         private List<IWorkflowFunctionInstance> functionInstances = new List<IWorkflowFunctionInstance>();
         private IWorkflowFunctionInstance? currentFunctionInstance;
-        public WorkflowInstanceState State { get; private set; }
-        public bool HasEvent => events.Count != 0;
+        private WorkflowInstanceContext context;
+        private IWorkflowMessageHandler messageHandler;
 
-        public WorkflowInstance(WorkflowDefinition definition, IWorkflowFunctionInstanceFactory instanceFactory) 
+        public WorkflowInstance(WorkflowDefinition definition, IWorkflowFunctionInstanceFactory instanceFactory, IWorkflowMessageHandler messageHandler) 
         {
+            this.messageHandler = messageHandler;
+            this.context = new WorkflowInstanceContext(messageHandler.PushMessage);
             this.definition = definition;
             foreach (WorkflowFunctionNode node in definition.GetFunctionNodes())
             {
                 IWorkflowFunctionInstance instance = instanceFactory.GetNewInstance(node.FunctionName);
-                instance.Id = node.Id; // TODO 
+                instance.Id = node.Id; // TODO
                 functionInstances.Add(instance);
             }
 
@@ -39,80 +42,66 @@ namespace Workflows
                 currentFunctionInstance = functionInstances.First(i => i.Id == definition.EntryPointId);
         }
 
-        public async Task<bool> Iterate()
-        {
+        public async Task Run(CancellationToken token = default)
+        {            
+            if (State == WorkflowInstanceState.Done)
+                return;
+
+            if (State == WorkflowInstanceState.Waiting)
+                return;
+
             if (currentFunctionInstance == null)
-                return false;
+                return;
 
-            if (State == WorkflowInstanceState.Aborted)
-                return false;
+            if (State == WorkflowInstanceState.Initial)
+                State = WorkflowInstanceState.Running;
 
-            if (State == WorkflowInstanceState.Paused)
-                return true;
-
-            if (State == WorkflowInstanceState.Error)
-                return true;
-
-
-            WorkflowFunctionResult result = await RunStatefulFunction(currentFunctionInstance);
-            foreach (WorkflowEventArgs args in result.Events)
-                events.Enqueue(args);
-
-            if (result.IsError)
+            WorkflowFunctionState result = await RunStatefulFunction(context, currentFunctionInstance, token);
+            if (result == WorkflowFunctionState.Waiting)
             {
-                events.Enqueue(new WorkflowEventArgs("ErrorOccured"));
-                State = WorkflowInstanceState.Error;
-                return true;
+                State = WorkflowInstanceState.Waiting;
+                return;
             }
-
-            if (result.IsDone)
+            if (result == WorkflowFunctionState.Done)
             {
                 // resolve next
-                WorkflowValue nextRef = await ResolveOutputRefToLiteral(definition.GetFunctionNode(currentFunctionInstance!.Id).Next);
+                WorkflowValue nextRef = await ResolveOutputRefToLiteral(context, definition.GetFunctionNode(currentFunctionInstance!.Id).Next);
                 if (!nextRef.IsDefined)
                 {
                     State = WorkflowInstanceState.Done;
-                    return false;
-                }
-
-                if (nextRef.Type != WorkflowDataType.FunctionRef)
-                {
-                    State = WorkflowInstanceState.Error;
-                    return true;
+                    return;
                 }
 
                 // move to next
-                currentFunctionInstance = functionInstances.First(i => i.Id == nextRef.AsFunctionRef());
+                currentFunctionInstance = functionInstances.First(i => i.Id == nextRef.FunctionRef());
+                State = WorkflowInstanceState.Running;
+                return;
             }
-
-            return true;
         }
 
-        public void SendEvent(WorkflowEventArgs args)
+        public async Task SendMessage(WorkflowMessage args)
         {
-            if (args.Name == "PauseWorkflow")
-            {
-                State = WorkflowInstanceState.Paused;
-            }
-            if (args.Name == "ResumeWorkflow")
-            {
-                State = WorkflowInstanceState.Running;
-            }
-            if (args.Name == "AbortWorkflow")
-            {
-                State = WorkflowInstanceState.Aborted;
-            }
+            if (State != WorkflowInstanceState.Waiting)
+                return;
 
             if (currentFunctionInstance != null)
-                currentFunctionInstance.HandleEvent(args);
+            {
+                WorkflowFunctionState result = await currentFunctionInstance.HandleMessageAsync(args, default);
+                if (result == WorkflowFunctionState.Running)
+                {
+                    State = WorkflowInstanceState.Running;
+                    return;
+                }
+                if (result == WorkflowFunctionState.Done)
+                {
+                    State = WorkflowInstanceState.Done;
+                    return;
+                }
+            }
         }
 
-        public WorkflowEventArgs ReadEvent()
-        {
-            return events.Dequeue();
-        }
 
-        private async Task<WorkflowValueObject> GetInputsForFunctionNode(int id)
+        private async Task<WorkflowValueObject> GetInputsForFunctionNode(WorkflowInstanceContext handler, int id)
         {
             WorkflowValueObject inputs = new WorkflowValueObject();
             WorkflowInputNode[] inputNodes = definition.GetInputNodesForFunction(id);
@@ -120,39 +109,34 @@ namespace Workflows
                 return inputs;
 
             foreach (WorkflowInputNode input in inputNodes)
-                inputs[input.Name] = await ResolveOutputRefToLiteral(input.Source);
+                inputs[input.Name] = await ResolveOutputRefToLiteral(handler, input.Source);
 
             return inputs;
         }
 
-        private async Task<WorkflowValue> ResolveOutputRefToLiteral(WorkflowValue value)
+        private async Task<WorkflowValue> ResolveOutputRefToLiteral(WorkflowInstanceContext handler, WorkflowValue value)
         {
             if (value.Type != WorkflowDataType.OutputRef)
                 return value;
 
-            WorkflowOutputNode outputNode = definition.GetOutputNode(value.AsOutputRef());
-            WorkflowValueObject outputValues = await ComputeFunctionOutputs(functionInstances.First(i => i.Id == outputNode.FunctionId));
+            WorkflowOutputNode outputNode = definition.GetOutputNode(value.OutputRef());
+            WorkflowValueObject outputValues = await ComputeFunctionOutputs(handler, functionInstances.First(i => i.Id == outputNode.FunctionId));
             return outputValues[outputNode.Name];
         }
 
-
-        private async Task<WorkflowValueObject> ComputeFunctionOutputs(IWorkflowFunctionInstance instance)
+        private async Task<WorkflowValueObject> ComputeFunctionOutputs(WorkflowInstanceContext handler, IWorkflowFunctionInstance instance)
         {
-            WorkflowValueObject inputs = await GetInputsForFunctionNode(instance.Id);
-            foreach(string name in inputs.Names)
-                instance.SetInput(name, inputs[name]);
-
-            await instance.Run();
-            return instance.GetOutputs();
+            WorkflowValueObject inputs = await GetInputsForFunctionNode(handler, instance.Id);
+            instance.SetInput(inputs);
+            await instance.RunAsync(handler, default);
+            return instance.GetOutput();
         }
 
-        private async Task<WorkflowFunctionResult> RunStatefulFunction(IWorkflowFunctionInstance instance)
+        private async Task<WorkflowFunctionState> RunStatefulFunction(WorkflowInstanceContext handler, IWorkflowFunctionInstance instance, CancellationToken token = default)
         {
-            WorkflowValueObject inputs = await GetInputsForFunctionNode(instance.Id);
-            foreach (string name in inputs.Names)
-                instance.SetInput(name, inputs[name]);
-
-            return await instance.Run();
+            WorkflowValueObject inputs = await GetInputsForFunctionNode(handler, instance.Id);
+            instance.SetInput(inputs);
+            return await instance.RunAsync(handler, token);
         }
     }
 }

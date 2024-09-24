@@ -7,18 +7,13 @@ using WorkflowEngineIntegration;
 
 namespace Workflows
 {
-    public class WorkflowFunctionPrintBusiness : IWorkflowFunctionInstance
+    public class WorkflowFunctionPrintBusiness : WorkflowFunctionInstanceBase
     {
-        IBusinessLogicService businesLogicService;
+        private readonly IServiceScopeFactory scopeFactory;
 
-        public WorkflowFunctionPrintBusiness(IBusinessLogicService businesLogicService)
+        public WorkflowFunctionPrintBusiness(IServiceScopeFactory scopeFactory)
         {
-            this.businesLogicService = businesLogicService;
-        }
-
-        public WorkflowValue GetOutput(string name)
-        {
-            return new WorkflowValue();
+            this.scopeFactory = scopeFactory;
         }
 
         public void HandleEvent(EventArgs args)
@@ -28,13 +23,11 @@ namespace Workflows
 
         public Task<WorkflowFunctionResultStatus> Run()
         {
-            Console.WriteLine(WorkflowValue.String("business!"));
+            using(IServiceScope scope = scopeFactory.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<IBusinessLogicService>().Hello();
+            }
             return Task.FromResult(WorkflowFunctionResultStatus.Done);
-        }
-
-        public void SetInput(string name, WorkflowValue value)
-        {
-            
         }
     }
 }

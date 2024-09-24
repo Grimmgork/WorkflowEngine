@@ -8,8 +8,8 @@ namespace Workflows
 {
     public struct WorkflowValue
     {
-        public WorkflowDataType Type;
-        public object? Value;
+        public readonly WorkflowDataType Type;
+        private object? value;
 
         public bool IsDefined => Type != WorkflowDataType.Undef;
         public bool IsNull => Type == WorkflowDataType.Null;
@@ -17,16 +17,18 @@ namespace Workflows
         public bool IsInt => Type == WorkflowDataType.Int;
         public bool IsString => Type == WorkflowDataType.String;
         public bool IsBool => Type == WorkflowDataType.Bool;
+        public bool IsObject => Type == WorkflowDataType.Object;
+        public bool IsArray => Type == WorkflowDataType.Array;
 
         public WorkflowValue()
         {
-            this.Value = null;
+            this.value = null;
             this.Type = WorkflowDataType.Undef;
         }
 
         public WorkflowValue(WorkflowDataType type, object? value = null)
         {
-            this.Value = value;
+            this.value = value;
             this.Type = type;
         }
 
@@ -70,17 +72,9 @@ namespace Workflows
             return new WorkflowValue(WorkflowDataType.Object, obj);
         }
 
-        public static WorkflowValue TryParse(object? value)
+        public static WorkflowValue Array(WorkflowValueArray arr)
         {
-            if (value == null)
-                return WorkflowValue.Null();
-            return value switch
-            {
-                int parsed => WorkflowValue.Int(parsed),
-                bool parsed => WorkflowValue.Bool(parsed),
-                string parsed => WorkflowValue.String(parsed),
-                _ => WorkflowValue.Error()
-            };
+            return new WorkflowValue(WorkflowDataType.Array, arr);
         }
 
         public static WorkflowValue operator +(WorkflowValue a, WorkflowValue b)
@@ -92,8 +86,8 @@ namespace Workflows
             {
                 return a.Type switch
                 {
-                    WorkflowDataType.Int => WorkflowValue.Int((int)a.Value! + (int)b.Value!),
-                    WorkflowDataType.String => WorkflowValue.String((string)b.Value! + (string)b.Value!),
+                    WorkflowDataType.Int => WorkflowValue.Int(b.Int() + b.Int()),
+                    WorkflowDataType.String => WorkflowValue.String(b.String() + b.String()),
                     _ => WorkflowValue.Error(1)
                 };
             }
@@ -103,46 +97,51 @@ namespace Workflows
             }
         }
 
-        public int AsInt()
+        public int Int()
         {
             return As<int>();
         }
 
-        public string AsString()
+        public string String()
         {
             return As<string>();
         }
 
-        public int AsFunctionRef()
+        public int FunctionRef()
         {
             return As<int>();
         }
 
-        public bool AsBool()
+        public bool Bool()
         {
             return As<bool>();
         }
 
-        public int AsOutputRef()
+        public int OutputRef()
         {
             return As<int>();
         }
 
+        public WorkflowValueArray Array()
+        {
+            return As<WorkflowValueArray>();
+        }
+
         private T As<T>()
         {
-            if (Value!.GetType() == typeof(T))
-                return (T)Value!;
+            if (value!.GetType() == typeof(T))
+                return (T)value!;
             throw new Exception($"Value is not of type {typeof(T)}!");
         }
 
-        public WorkflowValueObject AsObject()
+        public WorkflowValueObject Object()
         {
-            return (WorkflowValueObject)Value!;
+            return (WorkflowValueObject)value!;
         }
 
         public override string ToString()
         {
-            return $"{Type}#{Value}";
+            return $"{Type}#{value}";
         }
     }
 }

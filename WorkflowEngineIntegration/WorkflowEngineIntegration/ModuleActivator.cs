@@ -12,7 +12,7 @@ namespace WorkflowEngineIntegration
 
         public void RegisterWorkflowFunctions(IWorkflowFunctionInstanceFactory factory, IServiceScopeFactory scopeFactory)
         {
-            factory.RegisterFunction("name", () => new WorkflowFunctionPrintBusiness(scopeFactory));
+            factory.RegisterFunction("print", () => new WorkflowFunctionPrintBusiness(scopeFactory));
         }
     }
 }

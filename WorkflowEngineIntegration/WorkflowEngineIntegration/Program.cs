@@ -9,8 +9,10 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<IWorkflowFunctionInstanceFactory, WorkflowFunctionInstanceFactory>();
-builder.Services.AddSingleton<IWorkflowEngineService, WorkflowEngineService>();
+builder.Services.AddSingleton<IWorkflowFunctionInstanceFactory, DefaultWorkflowFunctionInstanceFactory>();
+builder.Services.AddSingleton<IWorkflowMessageHandler, ConsoleMessageHandler>();
+builder.Services.AddHostedService<WorkflowEngineService>();
+
 ModuleActivator activator = new ModuleActivator();
 activator.RegisterServices(builder.Services);
 var app = builder.Build();

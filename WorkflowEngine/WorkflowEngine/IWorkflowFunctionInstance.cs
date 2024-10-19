@@ -10,16 +10,8 @@ namespace Workflows
     {
         public int Id { get; set; } // TODO
 
-        public void SetInput(WorkflowValueObject input);
+        public WorkflowValueObject Run(IWorkflowMessageHandler context, WorkflowValueObject input, CancellationToken token);
 
-        public WorkflowValueObject GetOutput();
-
-        public WorkflowFunctionState Run(WorkflowInstanceContext context, CancellationToken token);
-
-        public Task<WorkflowFunctionState> RunAsync(WorkflowInstanceContext context, CancellationToken token);
-
-        public WorkflowFunctionState HandleMessage(WorkflowMessage message, CancellationToken token);
-
-        public Task<WorkflowFunctionState> HandleMessageAsync(WorkflowMessage message, CancellationToken token);
+        public Task<WorkflowValueObject> RunAsync(IWorkflowMessageHandler context, WorkflowValueObject input, CancellationToken token);
     }
 }

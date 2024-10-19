@@ -19,23 +19,15 @@ definition.CreateInputNode(10, 5, "else", WorkflowValue.Function(3));
 definition.CreateOutputNode(3, 5, "result");
 
 IWorkflowMessageHandler messageHandler = new ConsoleMessageHandler();
-WorkflowFunctionInstanceFactory factory = new WorkflowFunctionInstanceFactory();
+IWorkflowFunctionInstanceFactory factory = new DefaultWorkflowFunctionInstanceFactory();
+factory.RegisterFunction("print", () => new WorkflowFunctionInstancePrint());
+factory.RegisterFunction("wait_for_confirmation", () => new WorkflowFunctionInstanceWaitForConfirmation());
+factory.RegisterFunction("if", () => new PureWorkflowFunctionInstance((inputs) => inputs["condition"].Bool() ? inputs["then"] : inputs["else"]));
+
 WorkflowInstance instance = new WorkflowInstance(definition, factory, messageHandler);
-
-while (true)
+do
 {
-    if (instance.State == WorkflowInstanceState.Running || instance.State == WorkflowInstanceState.Initial)
-    {
-        await instance.Run();
-    }
-
-    if (instance.State == WorkflowInstanceState.Waiting)
-    {
-        await instance.SendMessage(new CustomWorkflowMessage(Console.ReadLine() ?? ""));
-    }
-
-    if (instance.State == WorkflowInstanceState.Done)
-        break;
+    await instance.Run();
 }
-
+while (instance.State == WorkflowInstanceState.Running);
 Console.WriteLine("Done!");

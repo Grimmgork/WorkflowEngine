@@ -127,16 +127,16 @@ namespace Workflows
             return As<WorkflowValueArray>();
         }
 
+        public WorkflowValueObject Object()
+        {
+            return (WorkflowValueObject)value!;
+        }
+
         private T As<T>()
         {
             if (value!.GetType() == typeof(T))
                 return (T)value!;
             throw new Exception($"Value is not of type {typeof(T)}!");
-        }
-
-        public WorkflowValueObject Object()
-        {
-            return (WorkflowValueObject)value!;
         }
 
         public override string ToString()

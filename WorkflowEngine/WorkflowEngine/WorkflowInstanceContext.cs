@@ -6,33 +6,25 @@ using System.Threading.Tasks;
 
 namespace Workflows
 {
-    public class WorkflowInstanceContext
+    public class WorkflowInstanceContext : IWorkflowMessageHandler
     {
-        private Func<WorkflowMessage, Task> messageHandler;
+        private Func<CancellationToken, Task<WorkflowMessage>> read;
+        private Func<WorkflowMessage, Task> write;
 
-        public WorkflowInstanceContext(Func<WorkflowMessage, Task> messageHandler)
+        public WorkflowInstanceContext(Func<CancellationToken, Task<WorkflowMessage>> read, Func<WorkflowMessage, Task> write)
         {
-            this.messageHandler = messageHandler;
+            this.read = read;
+            this.write = write;
         }
 
-        public Task SendMessageAsync(WorkflowMessage message)
+        public Task<WorkflowMessage> ReadMessage(CancellationToken token)
         {
-            return messageHandler.Invoke(message);
+            return read.Invoke(token);
         }
 
-        public void SendMessage(WorkflowMessage message)
+        public Task WriteMessage(WorkflowMessage message)
         {
-            messageHandler.Invoke(message).GetAwaiter().GetResult();
-        }
-
-        public void SetVariable()
-        {
-
-        }
-
-        public void GetVariable()
-        {
-
+            return write.Invoke(message);
         }
     }
 }

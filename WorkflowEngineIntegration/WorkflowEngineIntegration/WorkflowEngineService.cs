@@ -5,77 +5,49 @@ namespace WorkflowEngineIntegration
 {
     public interface IWorkflowEngineService
     {
-        void StartWorkflow(string name);
+        int StartWorkflow(string name);
 
-        void StopWorkflow(int instanceId);
+        void PauseWorkflow(int instanceId);
 
-        WorkflowInstanceState GetInstance(int instanceId);
-
-        IEnumerable<WorkflowInstanceState> GetInstances();
+        void CancelWorfklow(int instanceId);
     }
 
-    public class WorkflowInstanceState
+    public class WorkflowEngineService : IWorkflowEngineService, IHostedService
     {
-        public readonly string Name;
+        private IWorkflowFunctionInstanceFactory instanceFactory;
+        private IWorkflowMessageHandler messageHandler;
 
-        public readonly int InstanceId;
-    }
-
-    public class WorkflowEngineService : IWorkflowEngineService, IAsyncDisposable
-    {
-        IServiceScopeFactory scopeFactory;
-
-        private List<WorkflowInstance> instances = new List<WorkflowInstance>();
-
-        public WorkflowEngineService(IServiceScopeFactory scopeFactory)
+        public WorkflowEngineService(IWorkflowFunctionInstanceFactory instanceFactory, IWorkflowMessageHandler messageHandler)
         {
-            this.scopeFactory = scopeFactory;
+            this.instanceFactory = instanceFactory;
+            this.messageHandler = messageHandler;
         }
 
-        public void StartWorkflow(string name)
+        public void CancelWorfklow(int instanceId)
         {
-            // deserialze WorkflowDefiniton from database
-            WorkflowDefinition definition = new WorkflowDefinition();
-            WorkflowFunctionInstanceFactory functionFactory = new WorkflowFunctionInstanceFactory();
-            WorkflowInstance instance = new WorkflowInstance(definition, functionFactory);
-
-            // while(!instance.CanStep)
-            //    while (HasEvent)
-            //       instance.HandleEvent(event)
-            //    instance.Step()
-            //    while (instance.HasEvent)
-            //       RaiseEvent(instance.ReadEvent())
-
-            // SupplyValueEvent
-            //    Value
-
-            // RequestStepEvent
-
-            // RequestPauseEvent
-
-            // RequestAbortEvent
-
-            // EventArgs
-
-            
-            instances.Add(instance);
-            instance.Start();
+            throw new NotImplementedException();
         }
 
-        public async Task SendMessage(int instanceId, )
+        public void PauseWorkflow(int instanceId)
         {
-
+            throw new NotImplementedException();
         }
 
-        public ValueTask DisposeAsync()
+        public int StartWorkflow(string name)
         {
-            foreach (WorkflowInstance instanc in instances)
-            {
-                await AbortWorkflow(0);
-            }
+            throw new NotImplementedException();
+        }
 
-            // wait for all completionSources
-            // done
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            // load from disk
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            // save to disk
+            return Task.CompletedTask;
         }
     }
 }

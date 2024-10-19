@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace Workflows
 {
-    internal class ConsoleMessageHandler : IWorkflowMessageHandler
+    public class ConsoleMessageHandler : IWorkflowMessageHandler
     {
-        public Task<WorkflowMessage> PullMessage()
+        public Task<WorkflowMessage> ReadMessage(CancellationToken token = default)
         {
             return Task.FromResult<WorkflowMessage>(new CustomWorkflowMessage(Console.ReadLine() ?? ""));
         }
 
-        public Task PushMessage(WorkflowMessage message)
+        public Task WriteMessage(WorkflowMessage message)
         {
             return Task.Run(() => Console.WriteLine($"{message}"));
         }

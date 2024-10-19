@@ -16,18 +16,14 @@ namespace Workflows
             this.scopeFactory = scopeFactory;
         }
 
-        public void HandleEvent(EventArgs args)
+        public override async Task<WorkflowValueObject> RunAsync(IWorkflowMessageHandler context, WorkflowValueObject input, CancellationToken token)
         {
-            
-        }
-
-        public Task<WorkflowFunctionResultStatus> Run()
-        {
-            using(IServiceScope scope = scopeFactory.CreateScope())
+            WorkflowMessage message = await context.ReadMessage(token);
+            using (IServiceScope scope = scopeFactory.CreateScope())
             {
-                scope.ServiceProvider.GetRequiredService<IBusinessLogicService>().Hello();
+                await scope.ServiceProvider.GetRequiredService<IBusinessLogicService>().Hello();
             }
-            return Task.FromResult(WorkflowFunctionResultStatus.Done);
+            return new WorkflowValueObject();
         }
     }
 }

@@ -8,7 +8,7 @@ namespace Workflows
 {
     public interface IWorkflowMessageHandler
     {
-        public Task PushMessage(WorkflowMessage message);
-        public Task<WorkflowMessage> PullMessage();
+        public Task WriteMessage(WorkflowMessage message);
+        public Task<WorkflowMessage> ReadMessage(CancellationToken token);
     }
 }

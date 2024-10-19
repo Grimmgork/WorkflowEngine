@@ -2,8 +2,8 @@
 {
     public interface IWorkflowFunctionInstanceFactory
     {
-        void RegisterFunction(string name, Func<IWorkflowFunctionInstance> build);
+        public IWorkflowFunctionInstance GetNewInstance(string name);
 
-        IWorkflowFunctionInstance GetNewInstance(string name);
+        public void RegisterFunction(string name, Func<IWorkflowFunctionInstance> build);
     }
 }

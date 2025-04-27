@@ -4,20 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Workflows
+namespace Workflows.Data
 {
     public enum WorkflowDataType
     {
-        Undef,
-        Error,
-        Null,
-        Int,
-        Bool,
+        Undefined,
+        Int32,
+        Int64,
+        Single,
+        DateTime,
+        Boolean,
         String,
+        Error,
+        Output,
+        Method,
         Array,
-        Object,
-        OutputRef,
-        FunctionRef,
-        EventRef
+        Struct,
     }
 }

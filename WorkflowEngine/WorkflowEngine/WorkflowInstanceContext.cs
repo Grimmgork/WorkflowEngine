@@ -3,28 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Workflows.Function;
+using Workflows.Message;
 
 namespace Workflows
 {
-    public class WorkflowInstanceContext : IWorkflowMessageHandler
+    public class WorkflowInstanceContext
     {
-        private Func<CancellationToken, Task<WorkflowMessage>> read;
-        private Func<WorkflowMessage, Task> write;
+        private Func<WorkflowSignal, Task> raiseSignal;
 
-        public WorkflowInstanceContext(Func<CancellationToken, Task<WorkflowMessage>> read, Func<WorkflowMessage, Task> write)
+        public WorkflowInstanceContext(Func<WorkflowSignal, Task> raiseSignal)
         {
-            this.read = read;
-            this.write = write;
+            this.raiseSignal = raiseSignal;
         }
 
-        public Task<WorkflowMessage> ReadMessage(CancellationToken token)
+        public Task RaiseSignal(WorkflowSignal signal)
         {
-            return read.Invoke(token);
-        }
-
-        public Task WriteMessage(WorkflowMessage message)
-        {
-            return write.Invoke(message);
+            return raiseSignal(signal);
         }
     }
 }

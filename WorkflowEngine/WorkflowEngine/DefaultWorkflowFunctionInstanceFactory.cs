@@ -5,26 +5,39 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Workflows.Function;
+using Workflows.Method;
 
 namespace Workflows
 {
     public class DefaultWorkflowFunctionInstanceFactory : IWorkflowFunctionInstanceFactory
     {
-        private Dictionary<string, Func<IWorkflowFunctionInstance>> builders = new Dictionary<string, Func<IWorkflowFunctionInstance>>();
+        private Dictionary<string, Func<IWorkflowMethodInstance>> methods = new Dictionary<string, Func<IWorkflowMethodInstance>>();
+        private Dictionary<string, Func<IWorkflowFunctionInstance>> functions = new Dictionary<string, Func<IWorkflowFunctionInstance>>();
 
         public DefaultWorkflowFunctionInstanceFactory()
         {
             
         }
 
-        public virtual IWorkflowFunctionInstance GetNewInstance(string name)
+        public IWorkflowMethodInstance GetMethodInstance(string name)
         {
-            return builders[name].Invoke();
+            return methods[name].Invoke();
         }
 
-        public void RegisterFunction(string name, Func<IWorkflowFunctionInstance> build)
+        public IWorkflowFunctionInstance GetFunctionInstance(string name)
         {
-            builders.Add(name, build);
+            return functions[name].Invoke();
+        }
+
+        public void Register(string name, Func<IWorkflowFunctionInstance> build)
+        {
+            functions.Add(name, build);
+        }
+
+        public void Register(string name, Func<IWorkflowMethodInstance> build)
+        {
+            methods.Add(name, build);
         }
     }
 }

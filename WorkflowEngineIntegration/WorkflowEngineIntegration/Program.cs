@@ -10,7 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IWorkflowFunctionInstanceFactory, DefaultWorkflowFunctionInstanceFactory>();
-builder.Services.AddSingleton<IWorkflowMessageHandler, ConsoleMessageHandler>();
+builder.Services.AddSingleton<IWorkflowSignalHandler, ConsoleSignalHandler>();
 builder.Services.AddHostedService<WorkflowEngineService>();
 
 ModuleActivator activator = new ModuleActivator();

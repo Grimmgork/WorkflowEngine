@@ -15,9 +15,9 @@ namespace WorkflowEngineIntegration
     public class WorkflowEngineService : IWorkflowEngineService, IHostedService
     {
         private IWorkflowFunctionInstanceFactory instanceFactory;
-        private IWorkflowMessageHandler messageHandler;
+        private IWorkflowSignalHandler messageHandler;
 
-        public WorkflowEngineService(IWorkflowFunctionInstanceFactory instanceFactory, IWorkflowMessageHandler messageHandler)
+        public WorkflowEngineService(IWorkflowFunctionInstanceFactory instanceFactory, IWorkflowSignalHandler messageHandler)
         {
             this.instanceFactory = instanceFactory;
             this.messageHandler = messageHandler;

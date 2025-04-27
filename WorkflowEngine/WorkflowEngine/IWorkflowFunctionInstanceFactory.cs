@@ -1,9 +1,12 @@
-﻿namespace Workflows
+﻿using Workflows.Function;
+using Workflows.Method;
+
+namespace Workflows
 {
     public interface IWorkflowFunctionInstanceFactory
     {
-        public IWorkflowFunctionInstance GetNewInstance(string name);
+        public IWorkflowFunctionInstance GetFunctionInstance(string name);
 
-        public void RegisterFunction(string name, Func<IWorkflowFunctionInstance> build);
+        public IWorkflowMethodInstance GetMethodInstance(string name);
     }
 }

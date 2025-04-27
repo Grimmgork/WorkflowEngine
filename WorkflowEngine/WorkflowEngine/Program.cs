@@ -1,33 +1,33 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Text.Json;
 using Workflows;
+using Workflows.Data;
+using Workflows.Function;
+using Workflows.Method;
+using Workflows.Model;
 
-WorkflowDefinition definition = new WorkflowDefinition("add_numbers");
+WorkflowDefinition definition = new WorkflowDefinition("workflow", 1);
+definition.AddMethod(1, "Print")
+    .Input("Message", SomeData.FromString("Enter a message ..."))
+    .OnNext(SomeData.FromMethodRef(2));
 
-definition.CreateFunctionNode(1, "print", WorkflowValue.OutputNode(3), true);
-definition.CreateInputNode(2, 1, "value", WorkflowValue.String("Hello world!"));
+definition.AddMethod(2, "WaitForInput")
+    .OnNext(SomeData.FromMethodRef(3));
 
-definition.CreateFunctionNode(3, "wait_for_confirmation");
-// workflow.CreateInputNode(6, 3, "value", WorkflowValue.String("lel"));
+definition.AddMethod(3, "Print")
+    .Input("Message", SomeData.FromOutputRef(2, "Result"));
 
-definition.CreateFunctionNode(4, "print");
-definition.CreateInputNode(7, 4, "value", WorkflowValue.String("kek"));
+IWorkflowSignalHandler signalHandler = new ConsoleSignalHandler();
+DefaultWorkflowFunctionInstanceFactory instanceFactory = new DefaultWorkflowFunctionInstanceFactory();
 
-definition.CreateFunctionNode(5, "if");
-definition.CreateInputNode(8, 5, "condition", WorkflowValue.Bool(false));
-definition.CreateInputNode(9, 5, "then", WorkflowValue.Function(4));
-definition.CreateInputNode(10, 5, "else", WorkflowValue.Function(3));
-definition.CreateOutputNode(3, 5, "result");
+instanceFactory.Register("Print", () => new PrintMethod());
+instanceFactory.Register("WaitForInput", () => new WaitForInputMethod());
+instanceFactory.Register("If", () => new WorkflowFunction((inputs) => inputs["Condition"].ToBoolean() ? inputs["Then"] : inputs["Else"]));
 
-IWorkflowMessageHandler messageHandler = new ConsoleMessageHandler();
-IWorkflowFunctionInstanceFactory factory = new DefaultWorkflowFunctionInstanceFactory();
-factory.RegisterFunction("print", () => new WorkflowFunctionInstancePrint());
-factory.RegisterFunction("wait_for_confirmation", () => new WorkflowFunctionInstanceWaitForConfirmation());
-factory.RegisterFunction("if", () => new PureWorkflowFunctionInstance((inputs) => inputs["condition"].Bool() ? inputs["then"] : inputs["else"]));
-
-WorkflowInstance instance = new WorkflowInstance(definition, factory, messageHandler);
+WorkflowInstance instance = new WorkflowInstance(1, definition, instanceFactory, signalHandler);
 do
 {
-    await instance.Run();
+    await instance.StepAsync();
 }
-while (instance.State == WorkflowInstanceState.Running);
+while (instance.State != WorkflowInstanceState.Done);
 Console.WriteLine("Done!");

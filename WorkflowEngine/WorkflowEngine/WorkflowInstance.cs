@@ -100,7 +100,17 @@ namespace Workflows
         {
             SomeData inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
             WorkflowMethodContext context = new WorkflowMethodContext(variables, methodData.GetValueOrDefault(currentMethodId), inputs);
-            WorkflowMethodState methodState = await currentMethodInstance.RunAsync(context, token);
+            WorkflowMethodState methodState;
+            try
+            {
+                methodState = await currentMethodInstance.RunAsync(context, token);
+            }
+            catch (Exception exception)
+            {
+                MoveToHandleError(exception);
+                return;
+            }
+
             methodData[currentMethodId] = context.Data;
 
             if (methodState == WorkflowMethodState.Done)
@@ -125,7 +135,17 @@ namespace Workflows
         {
             SomeData inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
             WorkflowMethodContext context = new WorkflowMethodContext(variables, inputs, methodData.GetValueOrDefault(currentMethodId));
-            WorkflowMethodState methodState = await currentMethodInstance.OnSignalAsync(context, await signalHandler.WaitForSignal(token), token);
+            WorkflowMethodState methodState;
+            try
+            {
+                methodState = await currentMethodInstance.OnSignalAsync(context, await signalHandler.WaitForSignal(token), token);
+            }
+            catch (Exception exception)
+            {
+                MoveToHandleError(exception);
+                return;
+            }
+
             methodData[currentMethodId] = context.Data;
 
             if (methodState == WorkflowMethodState.Done)
@@ -154,6 +174,27 @@ namespace Workflows
             {
                 state = WorkflowInstanceState.Done;
                 return;
+            }
+            else
+            {
+                // move to next
+                currentMethodId = nextRef.ToMethodRef().Id;
+
+                string methodname = definition.GetAction(currentMethodId).Name;
+                currentMethodInstance = instanceFactory.GetMethodInstance(methodname);
+
+                state = WorkflowInstanceState.Running;
+                return;
+            }
+        }
+
+        private void MoveToHandleError(Exception exception)
+        {
+            // resolve next
+            SomeData nextRef = ResolveOutputRef(definition.GetAction(currentMethodId).Error);
+            if (nextRef.IsNull)
+            {
+                throw exception;
             }
             else
             {

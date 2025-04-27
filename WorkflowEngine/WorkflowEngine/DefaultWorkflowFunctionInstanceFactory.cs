@@ -1,19 +1,13 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using WorkflowEngineIntegration;
 using Workflows.Function;
 using Workflows.Method;
 
 namespace Workflows
 {
-    public class DefaultWorkflowFunctionInstanceFactory : IWorkflowFunctionInstanceFactory
+    public class DefaultWorkflowFunctionInstanceFactory : IDefaultWorkflowActionInstanceFactory
     {
-        private Dictionary<string, Func<IWorkflowMethodInstance>> methods = new Dictionary<string, Func<IWorkflowMethodInstance>>();
-        private Dictionary<string, Func<IWorkflowFunctionInstance>> functions = new Dictionary<string, Func<IWorkflowFunctionInstance>>();
+        private Dictionary<string, Func<IWorkflowMethodInstance>> methods = new Dictionary<string, Func<IWorkflowMethodInstance>>(StringComparer.InvariantCultureIgnoreCase);
+        private Dictionary<string, Func<IWorkflowFunctionInstance>> functions = new Dictionary<string, Func<IWorkflowFunctionInstance>>(StringComparer.InvariantCultureIgnoreCase);
 
         public DefaultWorkflowFunctionInstanceFactory()
         {

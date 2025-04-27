@@ -3,7 +3,7 @@ using Workflows.Method;
 
 namespace Workflows
 {
-    public interface IWorkflowFunctionInstanceFactory
+    public interface IWorkflowActionInstanceFactory
     {
         public IWorkflowFunctionInstance GetFunctionInstance(string name);
 

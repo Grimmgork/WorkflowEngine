@@ -17,7 +17,7 @@ namespace Workflows.Method
             return WorkflowMethodState.Suspended;
         }
 
-        public override WorkflowMethodState OnSignal(WorkflowMethodContext context, WorkflowSignal signal, CancellationToken token)
+        public override WorkflowMethodState OnSignal(WorkflowMethodContext context, WorkflowSignal signal)
         {
             if (signal is PromptInputSignal inputSignal)
             {

@@ -10,9 +10,9 @@ namespace WorkflowEngineIntegration
             services.AddScoped<IBusinessLogicService, BusinessLogicService>();
         }
 
-        public void RegisterWorkflowFunctions(IWorkflowFunctionInstanceFactory factory, IServiceScopeFactory scopeFactory)
+        public void RegisterWorkflowFunctions(IDefaultWorkflowActionInstanceFactory factory, IServiceScopeFactory scopeFactory)
         {
-            factory.RegisterFunction("print", () => new WorkflowMethodPrintBusiness(scopeFactory));
+            factory.Register("PrintBusiness", () => new WorkflowMethodPrintBusiness(scopeFactory));
         }
     }
 }

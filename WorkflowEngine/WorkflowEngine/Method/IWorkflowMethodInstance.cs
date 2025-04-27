@@ -7,6 +7,6 @@ namespace Workflows.Method
 
         public Task<WorkflowMethodState> RunAsync(WorkflowMethodContext context, CancellationToken token);
 
-        public Task<WorkflowMethodState> OnSignalAsync(WorkflowMethodContext context, WorkflowSignal signal, CancellationToken token);
+        public WorkflowMethodState OnSignal(WorkflowMethodContext context, WorkflowSignal signal);
     }
 }

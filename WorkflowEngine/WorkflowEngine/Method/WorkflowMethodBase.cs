@@ -15,14 +15,9 @@ namespace Workflows.Method
 
         }
 
-        public virtual WorkflowMethodState OnSignal(WorkflowMethodContext context, WorkflowSignal signal, CancellationToken token)
+        public virtual WorkflowMethodState OnSignal(WorkflowMethodContext context, WorkflowSignal signal)
         {
             return WorkflowMethodState.Running;
-        }
-
-        public virtual Task<WorkflowMethodState> OnSignalAsync(WorkflowMethodContext context, WorkflowSignal signal, CancellationToken token)
-        {
-            return Task.FromResult(OnSignal(context, signal, token));
         }
 
         public virtual WorkflowMethodState Run(WorkflowMethodContext context, CancellationToken token)

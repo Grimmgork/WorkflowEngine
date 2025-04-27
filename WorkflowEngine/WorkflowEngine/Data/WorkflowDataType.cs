@@ -16,6 +16,7 @@ namespace Workflows.Data
         Boolean,
         String,
         Error,
+        Variable,
         Output,
         Method,
         Array,

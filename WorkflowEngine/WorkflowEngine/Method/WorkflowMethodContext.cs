@@ -19,23 +19,26 @@ namespace Workflows.Method
 
         public readonly IDictionary<string, SomeData> Variables;
 
+        private Func<WorkflowSignal, Task> sendSignal;
+
         public Task RaiseSignal(WorkflowSignal message)
         {
-            Console.WriteLine($"SIGNAL: {message.GetType().Name}");
-            return Task.CompletedTask;
+            return sendSignal(message);
         }
 
-        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData input)
+        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData input, Func<WorkflowSignal, Task> sendSignal)
         {
             Variables = variables;
             Input = input;
+            this.sendSignal = sendSignal;
         }
 
-        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData data, SomeData input)
+        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData data, SomeData input, Func<WorkflowSignal, Task> sendSignal)
         {
             Variables = variables;
             Input = input;
             Data = data;
+            this.sendSignal = sendSignal;
         }
     }
 }

@@ -131,20 +131,31 @@ namespace Workflows.Data
             return new SomeData(WorkflowDataType.Error, value);
         }
 
-        public static SomeData FromOutputRef(WorkflowOutputRef? value)
+        public static SomeData FromOutput(WorkflowOutputRef? value)
         {
             return new SomeData(WorkflowDataType.Output, value);
         }
 
-        public static SomeData FromMethodRef(WorkflowMethodRef? value)
+        public static SomeData FromMethod(WorkflowMethodRef? value)
         {
             return new SomeData(WorkflowDataType.Method, value);
         }
 
-        public static SomeData FromOutputRef(int methodId, string name)
+        public static SomeData FromOutput(int methodId, string name)
         {
             return new SomeData(WorkflowDataType.Output, new WorkflowOutputRef(methodId, name));
         }
+
+        public static SomeData FromVariable(string name)
+        {
+            return new SomeData(WorkflowDataType.Variable, new WorkflowVariableRef(name));
+        }
+
+        public static SomeData FromVariable(WorkflowVariableRef value)
+        {
+            return new SomeData(WorkflowDataType.Variable, value);
+        }
+
 
         public static SomeData FromPolymorphicObject(object? value)
         {
@@ -183,8 +194,8 @@ namespace Workflows.Data
                     String v => FromString(v),
                     Boolean v => FromBoolean(v),
                     Single v => FromSingle(v),
-                    WorkflowMethodRef v => FromMethodRef(v),
-                    WorkflowOutputRef v => FromOutputRef(v),
+                    WorkflowMethodRef v => FromMethod(v),
+                    WorkflowOutputRef v => FromOutput(v),
                     _ => throw new Exception($"Cannot convert {value.GetType()} into {nameof(SomeData)}")
                 };
             }
@@ -253,6 +264,11 @@ namespace Workflows.Data
         public WorkflowOutputRef ToOutputRef()
         {
             return (WorkflowOutputRef)scalarValue!;
+        }
+
+        public WorkflowVariableRef ToVariableRef()
+        {
+            return (WorkflowVariableRef)scalarValue!;
         }
 
         public object? ToPolymorphicObject()

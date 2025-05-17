@@ -9,14 +9,19 @@ namespace Workflows.Function
 {
     public class WorkflowFunction : WorkflowFunctionInstanceBase
     {
-        private Func<SomeData, SomeData> run;
+        private Func<SomeDataStruct, SomeDataStruct> run;
 
-        public WorkflowFunction(Func<SomeData, SomeData> run)
+        public WorkflowFunction(Func<SomeDataStruct, SomeData> run)
         {
-            this.run = run;
+            this.run = (input) =>
+            {
+                SomeDataStruct output = new SomeDataStruct();
+                output["Result"] = run(input);
+                return output;
+            };
         }
 
-        public sealed override SomeData Run(IWorkflowSignalHandler context, SomeData inputs)
+        public sealed override SomeDataStruct Run(IWorkflowSignalHandler context, SomeDataStruct inputs)
         {
             return run.Invoke(inputs);
         }

@@ -11,13 +11,17 @@ namespace Workflows.Method
 {
     public class WorkflowMethodContext
     {
-        public readonly SomeData Input;
+        public readonly SomeDataStruct Input;
 
-        public SomeData Output;
+        public SomeDataStruct Output;
 
         public SomeData Data;
 
-        public readonly IDictionary<string, SomeData> Variables;
+        public int Next = 0;
+
+        public SomeDataStruct WorkflowOutput;
+
+        public SomeDataStruct Variables;
 
         private Func<WorkflowSignal, Task> sendSignal;
 
@@ -26,19 +30,23 @@ namespace Workflows.Method
             return sendSignal(message);
         }
 
-        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData input, Func<WorkflowSignal, Task> sendSignal)
+        public WorkflowMethodContext(SomeDataStruct variables, SomeDataStruct workflowOutput, SomeDataStruct input, Func<WorkflowSignal, Task> sendSignal)
         {
             Variables = variables;
             Input = input;
             this.sendSignal = sendSignal;
+            Output = new SomeDataStruct();
+            WorkflowOutput = workflowOutput;
         }
 
-        public WorkflowMethodContext(IDictionary<string, SomeData> variables, SomeData data, SomeData input, Func<WorkflowSignal, Task> sendSignal)
+        public WorkflowMethodContext(SomeDataStruct variables, SomeDataStruct workflowOutput, SomeDataStruct input, Func<WorkflowSignal, Task> sendSignal, SomeData data)
         {
             Variables = variables;
             Input = input;
             Data = data;
+            Output = new SomeDataStruct();
             this.sendSignal = sendSignal;
+            WorkflowOutput = workflowOutput;
         }
     }
 }

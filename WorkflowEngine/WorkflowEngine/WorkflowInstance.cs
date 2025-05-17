@@ -20,10 +20,11 @@ namespace Workflows
         public int WorkflowDefintitionId;
         public WorkflowInstanceState State;
         public int CurrentMethodId;
-        public IDictionary<string, SomeData> Input = new Dictionary<string, SomeData>();
-        public IDictionary<string, SomeData> Variables = new Dictionary<string, SomeData>();
+        public SomeDataStruct Input = new SomeDataStruct();
+        public SomeDataStruct Output = new SomeDataStruct();
+        public SomeDataStruct Variables = new SomeDataStruct();
         public IDictionary<int, SomeData> MethodData = new Dictionary<int, SomeData>();
-        public IDictionary<int, SomeData> MethodOutput = new Dictionary<int, SomeData>();
+        public IDictionary<int, SomeDataStruct> MethodOutput = new Dictionary<int, SomeDataStruct>();
     }
 
     public class WorkflowInstance
@@ -36,30 +37,30 @@ namespace Workflows
         private int currentMethodId;
 
         private WorkflowInstanceState state = WorkflowInstanceState.Initial;
-        private IDictionary<string, SomeData> workflowInput;
-        private IDictionary<string, SomeData> variables;
+        private SomeDataStruct workflowInput;
+        private SomeDataStruct workflowOutput;
+        private SomeDataStruct variables;
         private IDictionary<int, SomeData> methodData;
-        private IDictionary<int, SomeData> methodOutput;
+        private IDictionary<int, SomeDataStruct> methodOutput;
         private WorkflowDefinition definition;
 
-        private IWorkflowSignalHandler signalHandler;
         private IWorkflowMethodInstance currentMethodInstance;
         private IWorkflowActionInstanceFactory instanceFactory;
 
         private Func<WorkflowSignal, Task> sendSignal;
 
-        public WorkflowInstance(int id, WorkflowDefinition definition, IWorkflowActionInstanceFactory instanceFactory, Func<WorkflowSignal, Task> sendSignal, IDictionary<string, SomeData>? input = null) 
+        public WorkflowInstance(int id, WorkflowDefinition definition, IWorkflowActionInstanceFactory instanceFactory, Func<WorkflowSignal, Task> sendSignal, SomeDataStruct? input = null) 
         {
             this.Id = id;
             this.WorkflowDefintitionId = definition.Id;
             this.definition = definition;
             this.instanceFactory = instanceFactory;
-            this.variables = new Dictionary<string, SomeData>();
             this.methodData = new Dictionary<int, SomeData>();
-            this.methodOutput = new Dictionary<int, SomeData>();
+            this.methodOutput = new Dictionary<int, SomeDataStruct>();
             this.currentMethodId = definition.EntryPointId;
-            this.workflowInput = input ?? new Dictionary<string, SomeData>();
+            this.workflowInput = input ?? new SomeDataStruct();
             this.sendSignal = sendSignal;
+            this.variables = new SomeDataStruct();
         }
 
         public WorkflowInstance(WorkflowInstanceData data, WorkflowDefinition definition, IWorkflowActionInstanceFactory instanceFactory, Func<WorkflowSignal, Task> sendSignal)
@@ -74,6 +75,8 @@ namespace Workflows
             this.definition = definition;
             this.instanceFactory = instanceFactory;
             this.sendSignal = sendSignal;
+            this.workflowInput = data.Input;
+            this.workflowOutput = data.Output;
         }
 
         public Task StepAsync(CancellationToken token = default)
@@ -81,23 +84,26 @@ namespace Workflows
             return state switch {
                 WorkflowInstanceState.Initial => InitializeAsync(token),
                 WorkflowInstanceState.Running => RunMethodAsync(token),
-                WorkflowInstanceState.Suspended => Task.CompletedTask,
                 _ => throw new InvalidOperationException()
             };
         }
 
         public void SendSignal(WorkflowSignal signal)
         {
-            SomeData inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
-            WorkflowMethodContext context = new WorkflowMethodContext(variables, inputs, methodData.GetValueOrDefault(currentMethodId), sendSignal);
+            if (state != WorkflowInstanceState.Suspended)
+                throw new InvalidOperationException();
+
+            SomeDataStruct inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
+            WorkflowMethodContext context = new WorkflowMethodContext(variables, workflowOutput, inputs, sendSignal, methodData.GetValueOrDefault(currentMethodId));
             WorkflowMethodState methodState;
+            context.Next = inputs["Then"].ToMethodRef().Id;
             try
             {
                 methodState = currentMethodInstance.OnSignal(context, signal);
             }
             catch (Exception exception)
             {
-                MoveToHandleError(exception);
+                MoveToHandleError(exception, definition.GetAction(currentMethodId).OnError);
                 return;
             }
 
@@ -106,7 +112,7 @@ namespace Workflows
             if (methodState == WorkflowMethodState.Done)
             {
                 methodOutput[currentMethodId] = context.Output;
-                MoveNextMethodOrDone();
+                MoveNextMethodOrDone(context.Next);
                 return;
             }
             else if (methodState == WorkflowMethodState.Running)
@@ -139,16 +145,17 @@ namespace Workflows
 
         private async Task RunMethodAsync(CancellationToken token)
         {
-            SomeData inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
-            WorkflowMethodContext context = new WorkflowMethodContext(variables, methodData.GetValueOrDefault(currentMethodId), inputs, sendSignal);
+            SomeDataStruct inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
+            WorkflowMethodContext context = new WorkflowMethodContext(variables, workflowOutput, inputs, sendSignal, methodData.GetValueOrDefault(currentMethodId));
             WorkflowMethodState methodState;
+            context.Next = inputs["Then"].ToMethodRef().Id;
             try
             {
                 methodState = await currentMethodInstance.RunAsync(context, token);
             }
             catch (Exception exception)
             {
-                MoveToHandleError(exception);
+                MoveToHandleError(exception, definition.GetAction(currentMethodId).OnError);
                 return;
             }
 
@@ -157,7 +164,7 @@ namespace Workflows
             if (methodState == WorkflowMethodState.Done)
             {
                 methodOutput[currentMethodId] = context.Output;
-                MoveNextMethodOrDone();
+                MoveNextMethodOrDone(context.Next);
                 return;
             }
             else if (methodState == WorkflowMethodState.Suspended)
@@ -172,46 +179,10 @@ namespace Workflows
             }
         }
 
-        private async Task ProcessSignalAsync(CancellationToken token)
-        {
-            SomeData inputs = GetInputsForMethod(definition.GetAction(currentMethodId));
-            WorkflowMethodContext context = new WorkflowMethodContext(variables, inputs, methodData.GetValueOrDefault(currentMethodId), sendSignal);
-            WorkflowMethodState methodState;
-            try
-            {
-                methodState = currentMethodInstance.OnSignal(context, await signalHandler.WaitForSignal(token));
-            }
-            catch (Exception exception)
-            {
-                MoveToHandleError(exception);
-                return;
-            }
-
-            methodData[currentMethodId] = context.Data;
-
-            if (methodState == WorkflowMethodState.Done)
-            {
-                methodOutput[currentMethodId] = context.Output;
-                MoveNextMethodOrDone();
-                return;
-            }
-            else if (methodState == WorkflowMethodState.Running)
-            {
-                state = WorkflowInstanceState.Running;
-                return;
-            }
-            else if (methodState == WorkflowMethodState.Suspended)
-            {
-                state = WorkflowInstanceState.Suspended;
-                return;
-            }
-        }
-
-        private void MoveNextMethodOrDone()
+        private void MoveNextMethodOrDone(int nextRef)
         {
             // resolve next
-            SomeData nextRef = ResolveValue(definition.GetAction(currentMethodId).Next);
-            if (nextRef.IsNull)
+            if (nextRef == 0)
             {
                 state = WorkflowInstanceState.Done;
                 return;
@@ -219,7 +190,7 @@ namespace Workflows
             else
             {
                 // move to next
-                currentMethodId = nextRef.ToMethodRef().Id;
+                currentMethodId = nextRef;
 
                 string methodname = definition.GetAction(currentMethodId).Name;
                 currentMethodInstance = instanceFactory.GetMethodInstance(methodname);
@@ -229,18 +200,17 @@ namespace Workflows
             }
         }
 
-        private void MoveToHandleError(Exception exception)
+        private void MoveToHandleError(Exception exception, int errorHandleRef)
         {
             // resolve next
-            SomeData nextRef = ResolveValue(definition.GetAction(currentMethodId).Error);
-            if (nextRef.IsNull)
+            if (errorHandleRef == 0)
             {
                 throw exception;
             }
             else
             {
                 // move to next
-                currentMethodId = nextRef.ToMethodRef().Id;
+                currentMethodId = errorHandleRef;
 
                 string methodname = definition.GetAction(currentMethodId).Name;
                 currentMethodInstance = instanceFactory.GetMethodInstance(methodname);
@@ -250,9 +220,9 @@ namespace Workflows
             }
         }
 
-        private SomeData GetInputsForFunction(WorkflowActionNode function)
+        private SomeDataStruct GetInputsForFunction(WorkflowActionNode function)
         {
-            SomeData inputs = SomeData.Struct();
+            SomeDataStruct inputs = new SomeDataStruct();
             IEnumerable<WorkflowInputNode> inputNodes = function.Inputs;
             if (!inputNodes.Any())
                 return inputs;
@@ -263,9 +233,9 @@ namespace Workflows
             return inputs;
         }
 
-        private SomeData GetInputsForMethod(WorkflowActionNode method)
+        private SomeDataStruct GetInputsForMethod(WorkflowActionNode method)
         {
-            SomeData inputs = SomeData.Struct();
+            SomeDataStruct inputs = new SomeDataStruct() ;
             IEnumerable<WorkflowInputNode> inputNodes = method.Inputs;
             if (!inputNodes.Any())
                 return inputs;
@@ -281,12 +251,17 @@ namespace Workflows
             if (value.DataType == WorkflowDataType.Output)
             {
                 WorkflowOutputRef outputRef = value.ToOutputRef();
-                SomeData outputValues = GetActionOutput(definition.GetAction(outputRef.Id));
+                SomeDataStruct outputValues = GetActionOutput(definition.GetAction(outputRef.Id));
                 return outputValues[outputRef.Name];
             }
             else if (value.DataType == WorkflowDataType.Variable)
             {
                 return variables[value.ToVariableRef().Name];
+            }
+            else if (value.DataType == WorkflowDataType.Expression)
+            {
+                WorkflowFunctionContext context = new WorkflowFunctionContext(variables, methodOutput);
+                return value.ToExpression().Evaluate(context);
             }
             else
             {
@@ -294,16 +269,16 @@ namespace Workflows
             }
         }
 
-        private SomeData GetActionOutput(WorkflowActionNode node)
+        private SomeDataStruct GetActionOutput(WorkflowActionNode node)
         {
             if (node.Type == WorkflowActionNodeType.Method)
             {
-                return methodOutput.GetValueOrDefault(node.Id);
+                return methodOutput.GetValueOrDefault(node.Id, new SomeDataStruct());
             }
             else
             {
                 WorkflowActionNode action = definition.GetAction(currentMethodId);
-                SomeData inputs = GetInputsForFunction(action);
+                SomeDataStruct inputs = GetInputsForFunction(action);
                 IWorkflowFunctionInstance instance = instanceFactory.GetFunctionInstance(action.Name);
                 return instance.Run(inputs);
             }
@@ -320,7 +295,8 @@ namespace Workflows
                 Input = workflowInput,
                 Variables = variables,
                 MethodData = methodData,
-                MethodOutput = methodOutput
+                MethodOutput = methodOutput,
+                Output = workflowOutput
             };
         }
     }

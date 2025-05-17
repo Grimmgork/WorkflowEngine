@@ -28,7 +28,7 @@ namespace Workflows.Model
             return actionNodes.First(i => i.Id == id);
         }
 
-        public WorkflowActionNode AddFunction(int id, string name)
+        public WorkflowActionNode Function(int id, string name)
         {
             WorkflowActionNode node = new WorkflowActionNode(this, WorkflowActionNodeType.Function)
             {
@@ -39,7 +39,7 @@ namespace Workflows.Model
             return node;
         }
 
-        public WorkflowActionNode AddMethod(int id, string name)
+        public WorkflowActionNode Method(int id, string name)
         {
             WorkflowActionNode node = new WorkflowActionNode(this, WorkflowActionNodeType.Method)
             {

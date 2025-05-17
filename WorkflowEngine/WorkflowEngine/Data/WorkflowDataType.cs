@@ -9,9 +9,9 @@ namespace Workflows.Data
     public enum WorkflowDataType
     {
         Undefined,
-        Int32,
-        Int64,
-        Single,
+        Integer,
+        Float,
+        Decimal,
         DateTime,
         Boolean,
         String,
@@ -19,6 +19,8 @@ namespace Workflows.Data
         Variable,
         Output,
         Method,
+        Expression,
+        Name,
         Array,
         Struct,
     }

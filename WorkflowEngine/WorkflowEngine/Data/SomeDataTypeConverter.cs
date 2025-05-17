@@ -17,10 +17,10 @@ namespace Workflows.Data
         {
             return value switch
             {
-                string v => SomeData.FromString(v),
-                Int32 v => SomeData.FromInt32(v),
-                Int64 v => SomeData.FromInt64(v),
-                Boolean v => SomeData.FromBoolean(v),
+                string v => SomeData.String(v),
+                Int32 v => SomeData.Integer(v),
+                Int64 v => SomeData.Integer(v),
+                Boolean v => SomeData.Boolean(v),
                 _ => base.ConvertFrom(context, culture, value)
             };
         }

@@ -7,13 +7,21 @@ using Workflows.Data;
 
 namespace Workflows.Function
 {
-    internal class WorkflowFunctionContext
+    public class WorkflowFunctionContext
     {
-        public readonly IDictionary<string, SomeData> Variables;
+        public readonly IReadOnlyDictionary<string, SomeData> Variables;
 
-        public WorkflowFunctionContext(IDictionary<string, SomeData> variables)
+        private readonly IDictionary<int, SomeDataStruct> methodOutputs;
+
+        public WorkflowFunctionContext(SomeDataStruct variables, IDictionary<int, SomeDataStruct> methodOutputs)
         {
             Variables = variables;
+            this.methodOutputs = methodOutputs;
+        }
+
+        public SomeData GetMethodOutput(int id, string name)
+        {
+            return methodOutputs[id][name];
         }
     }
 }

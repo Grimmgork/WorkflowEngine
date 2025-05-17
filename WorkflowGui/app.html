@@ -1,0 +1,21 @@
+def (hash seed)
+	(sha256 payload seed)
+
+def calculate_thing i:
+	switch x 
+		1 => "asdf"
+		2 => "asdaw"
+		3 => "adawd"
+	(map .name
+		(: i (+ i 1)))
+
+
+[
+	PropertyName: .MyVariable
+	Property: (hash .variable "my seed")
+	ThisThat: [
+		"Hello there!"
+		2
+		3
+	]
+]

@@ -19,12 +19,12 @@ namespace Workflows.Function
             // do nothing
         }
 
-        public virtual SomeData Run(IWorkflowSignalHandler context, SomeData input)
+        public virtual SomeDataStruct Run(IWorkflowSignalHandler context, SomeDataStruct input)
         {
             throw new NotImplementedException();
         }
 
-        public SomeData Run(SomeData input)
+        public SomeDataStruct Run(SomeDataStruct input)
         {
             throw new NotImplementedException();
         }

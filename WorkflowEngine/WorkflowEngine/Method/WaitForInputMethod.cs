@@ -21,9 +21,7 @@ namespace Workflows.Method
         {
             if (signal is PromptInputSignal inputSignal)
             {
-                SomeData output = SomeData.Struct();
-                output["Result"] = SomeData.FromString(inputSignal.Input);
-                context.Output = output;
+                context.Output["Result"] = SomeData.String(inputSignal.Input);
                 return WorkflowMethodState.Done;
             }
             else

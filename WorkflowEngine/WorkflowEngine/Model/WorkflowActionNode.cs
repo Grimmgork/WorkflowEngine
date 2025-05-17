@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Workflows.Data;
+using Workflows.Function;
+using Workflows.Method;
 
 namespace Workflows.Model
 {
@@ -18,8 +20,7 @@ namespace Workflows.Model
         public WorkflowActionNodeType Type;
         public int Id;
         public string Name = "";
-        public SomeData Next;
-        public SomeData Error;
+        public int OnError;
         public int XPos;
         public int YPos;
 
@@ -35,21 +36,33 @@ namespace Workflows.Model
 
         public IEnumerable<WorkflowInputNode> Inputs => inputs;
 
-        public WorkflowActionNode Input(string name, SomeData source = default)
+        public WorkflowActionNode Input(string name, SomeData source)
         {
             inputs.Add(new WorkflowInputNode(this, name, source));
             return this;
         }
 
-        public WorkflowActionNode OnError(SomeData method)
+        public WorkflowActionNode Input(string name, Func<WorkflowFunctionContext, SomeData> func)
         {
-            Error = method;
+            inputs.Add(new WorkflowInputNode(this, name, SomeData.Expression(func)));
             return this;
         }
 
-        public WorkflowActionNode OnNext(SomeData method)
+        public WorkflowActionNode Error(int methodId)
         {
-            Next = method;
+            OnError = methodId;
+            return this;
+        }
+
+        public WorkflowActionNode Then(int methodId)
+        {
+            inputs.Add(new WorkflowInputNode(this, "Then", SomeData.Method(methodId)));
+            return this;
+        }
+
+        public WorkflowActionNode Then(string route, int methodId)
+        {
+            inputs.Add(new WorkflowInputNode(this, route, SomeData.Method(methodId)));
             return this;
         }
     }

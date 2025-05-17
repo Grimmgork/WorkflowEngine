@@ -2,15 +2,33 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Workflows.Function;
 
 namespace Workflows.Data
 {
+    public class SomeDataStruct : Dictionary<string, SomeData>
+    {
+        public new SomeData this[string name]
+        {
+            get
+            {
+                return this.GetValueOrDefault(name);
+            }
+            set
+            {
+                base[name] = value;
+            }
+        }
+    }
+
     public struct SomeData
     {
         public readonly WorkflowDataType DataType = WorkflowDataType.Undefined;
+
         private readonly object? scalarValue = null;
         private readonly ICollection<SomeData>? arrayItems;
         private readonly IDictionary<string, SomeData>? structProperties;
@@ -66,14 +84,7 @@ namespace Workflows.Data
         {
             get 
             {
-                if (structProperties == null)
-                {
-                    return SomeData.Undef();
-                }
-                else
-                {
-                    return structProperties.GetValueOrDefault(name);
-                }
+                return structProperties?.GetValueOrDefault(name) ?? default;
             }
             set 
             {
@@ -85,14 +96,7 @@ namespace Workflows.Data
         {
             get
             {
-                if (arrayItems == null)
-                {
-                    return SomeData.Undef();
-                }
-                else
-                {
-                    return arrayItems.ElementAt(index);
-                }
+                return arrayItems?.ElementAtOrDefault(index) ?? default;
             }
         }
 
@@ -101,61 +105,70 @@ namespace Workflows.Data
             return new SomeData();
         }
 
-        public static SomeData FromInt32(Int32? value)
+        public static SomeData Integer(Int32? value)
         {
-            return new SomeData(WorkflowDataType.Int32, value);
+            return new SomeData(WorkflowDataType.Integer, value);
         }
 
-        public static SomeData FromInt64(Int64? value)
+        public static SomeData Integer(Int64? value)
         {
-            return new SomeData(WorkflowDataType.Int64, value);
+            return new SomeData(WorkflowDataType.Integer, value);
         }
 
-        public static SomeData FromBoolean(bool? value)
+        public static SomeData Boolean(bool? value)
         {
             return new SomeData(WorkflowDataType.Boolean, value);
         }
 
-        public static SomeData FromString(string? value)
+        public static SomeData String(string? value)
         {
             return new SomeData(WorkflowDataType.String, value);
         }
 
-        public static SomeData FromSingle(Single? value)
+        public static SomeData Float(Single? value)
         {
-            return new SomeData(WorkflowDataType.Single, value);
+            return new SomeData(WorkflowDataType.Float, value);
         }
 
-        public static SomeData FromError(WorkflowError? value)
+        public static SomeData Float(Double? value)
+        {
+            return new SomeData(WorkflowDataType.Float, value);
+        }
+
+        public static SomeData Error(WorkflowError? value)
         {
             return new SomeData(WorkflowDataType.Error, value);
         }
 
-        public static SomeData FromOutput(WorkflowOutputRef? value)
+        public static SomeData Output(WorkflowOutputRef? value)
         {
             return new SomeData(WorkflowDataType.Output, value);
         }
 
-        public static SomeData FromMethod(WorkflowMethodRef? value)
+        public static SomeData Method(WorkflowMethodRef? value)
         {
             return new SomeData(WorkflowDataType.Method, value);
         }
 
-        public static SomeData FromOutput(int methodId, string name)
+        public static SomeData Output(int methodId, string name)
         {
             return new SomeData(WorkflowDataType.Output, new WorkflowOutputRef(methodId, name));
         }
 
-        public static SomeData FromVariable(string name)
+        public static SomeData Variable(string name)
         {
             return new SomeData(WorkflowDataType.Variable, new WorkflowVariableRef(name));
         }
 
-        public static SomeData FromVariable(WorkflowVariableRef value)
+        public static SomeData Variable(WorkflowVariableRef value)
         {
             return new SomeData(WorkflowDataType.Variable, value);
         }
 
+        public static SomeData Expression(Func<WorkflowFunctionContext, SomeData> func)
+        {
+            return new SomeData(WorkflowDataType.Expression, new WorkflowExpression(func));
+        }
 
         public static SomeData FromPolymorphicObject(object? value)
         {
@@ -189,13 +202,13 @@ namespace Workflows.Data
             {
                 return value switch
                 {
-                    Int32 v => FromInt32(v),
-                    Int64 v => FromInt64(v),
-                    String v => FromString(v),
-                    Boolean v => FromBoolean(v),
-                    Single v => FromSingle(v),
-                    WorkflowMethodRef v => FromMethod(v),
-                    WorkflowOutputRef v => FromOutput(v),
+                    Int32 v => Integer(v),
+                    Int64 v => Integer(v),
+                    String v => String(v),
+                    Boolean v => Boolean(v),
+                    Single v => Float(v),
+                    WorkflowMethodRef v => Method(v),
+                    WorkflowOutputRef v => Output(v),
                     _ => throw new Exception($"Cannot convert {value.GetType()} into {nameof(SomeData)}")
                 };
             }
@@ -230,6 +243,11 @@ namespace Workflows.Data
             return Convert.ToInt32(scalarValue);
         }
 
+        public WorkflowExpression ToExpression()
+        {
+            return (WorkflowExpression)scalarValue!;
+        }
+
         public new string ToString()
         {
             if (IsNull)
@@ -247,6 +265,11 @@ namespace Workflows.Data
         public bool ToBoolean()
         {
             return Convert.ToBoolean(scalarValue);
+        }
+
+        public dynamic? ToDynamic()
+        {
+            return scalarValue;
         }
 
         public WorkflowMethodRef ToMethodRef()

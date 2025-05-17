@@ -9,6 +9,6 @@ namespace Workflows.Function
 {
     public interface IWorkflowFunctionInstance : IDisposable
     {
-        public SomeData Run(SomeData input);
+        public SomeDataStruct Run(SomeDataStruct input);
     }
 }
